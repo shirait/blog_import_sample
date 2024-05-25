@@ -1,0 +1,2 @@
+class BlogImportLog < ApplicationRecord
+end
