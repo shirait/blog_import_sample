@@ -1,0 +1,12 @@
+<%= form_with(url: import_csv_blogs_path, data: { turbo: false }) do |f|  %>
+  <p>
+    CSVファイルを選択して「アップロード」を押下してください。
+  </p>
+  <p>
+    <%= f.file_field(:csv) %>
+  </p>
+
+  <p>
+    <%= f.submit('アップロード') %>
+  </p>
+<% end %>
