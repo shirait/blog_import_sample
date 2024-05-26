@@ -1,6 +1,12 @@
+<p style="float: right;">
+  <%= link_to('ブログ一覧画面へ', blogs_path) %>
+</p>
+
+<h3>csv取込画面</h3>
+
 <%= form_with(url: import_csv_blogs_path, data: { turbo: false }) do |f|  %>
   <p>
-    CSVファイルを選択して「アップロード」を押下してください。
+    csvファイルを選択して「アップロード」を押下してください。
   </p>
   <p>
     <%= f.file_field(:csv) %>

@@ -1,0 +1,62 @@
+<p style="float: right;">
+  <%= link_to('csv取込画面へ', select_csv_blogs_path) %>
+  <% if data_present? %>
+    <br>
+    <%= link_to('データをすべて削除する', destroy_all_blogs_path, data: { 'turbo-method': :post, turbo_confirm: 'よろしいですか？' }) %>
+  <% end %>
+</p>
+
+<h3>ブログ一覧画面</h3>
+
+<% if @category_selectbox_options.present? %>
+  <div class="search-area" style="margin-bottom: 20px">
+    <%= form_with(url: blogs_path, method: :get, local: true) do |f| %>
+      <p style="margin-bottom: -3px;"><b>カテゴリー検索</b></p>
+      <%= select_tag(:category_ids,
+                     options_for_select(@category_selectbox_options, params[:category_ids]),
+                     multiple: true) %>
+      <%= link_to('カテゴリーの選択をすべて解除する', 'javascript:void(0);', onclick: '$("option:selected").prop("selected", false)') %>
+
+      <p style="margin-bottom: -3px;"><b>ソート条件</b></p>
+      <%= select_tag(:sort_key,
+                     options_for_select(sort_condition.invert, params[:sort_key])) %>
+      <br>
+      <%= f.submit('検索条件とソート条件を適用する', style: 'margin-top: 20px; margin-bottom: 30px;') %>
+    <% end %>
+  </div>
+<% end %>
+
+<div id="blog" class="blog-list jscroll">
+  <% @blogs.each do |blog| %>
+    <div style="border: 1px solid black;">
+      <div class="title">
+        <b><%= blog.title %></b>
+      </div>
+
+      <div class="content">
+        <%= simple_format(blog.content) %>
+      </div>
+
+      <div class="categories">
+        <%= blog.categories.map(&:name).join(' ') %>
+      </div>
+
+      <div class="good_count">
+        ❤️ <%= blog.good_count %>
+      </div>
+
+      <div class="created_at">
+        作成日時 <%= blog.created_at.strftime('%Y/%m/%d %H:%M:%S') %>
+      </div>
+
+      <div class="updated_at">
+        更新日時 <%= blog.updated_at.strftime('%Y/%m/%d %H:%M:%S') %>
+      </div>
+    </div>
+  <% end %>
+  <%= paginate @blogs %>
+</div>
+
+<% if @blogs.blank? %>
+  ブログが見つかりません。
+<% end %>

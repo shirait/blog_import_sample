@@ -9,6 +9,8 @@ class Blog < ApplicationRecord
 
   attr_accessor :category_ids_for_csv_import
 
+  paginates_per 20
+
   def self.initialize_blog_from_csv_row(id, csv_row, all_categories, blog_import_log)
     category_names = csv_row[2].split(',').map(&:strip)
 
@@ -25,5 +27,12 @@ class Blog < ApplicationRecord
     )
 
     blog
+  end
+
+  scope :category_select, -> (category_ids) do
+    return if category_ids.blank?
+
+    blog_ids = BlogCategorization.select(:blog_id).where(category_id: category_ids).group(:blog_id).having('count(category_id) = ?', category_ids.size)
+    where(id: blog_ids)
   end
 end

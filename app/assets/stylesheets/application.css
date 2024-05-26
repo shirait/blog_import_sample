@@ -21,3 +21,12 @@
 .danger {
     background-color: #fa5252;
 }
+
+nav.pagination {
+    display: none;
+}
+
+.category {
+    border: 1px solid black;
+    margin-right: 100px;
+}

@@ -7,6 +7,7 @@ Rails.application.routes.draw do
     collection do
       get  'select_csv'
       post 'import_csv'
+      post 'destroy_all'
     end
   end
 end

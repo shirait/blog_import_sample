@@ -1,7 +1,11 @@
 require 'csv'
 
 class BlogsController < ApplicationController
+  helper_method :sort_condition
+
   def index
+    @blogs = Blog.category_select(params[:category_ids]).eager_load(:categories).page(params[:page]).order(sort_key)
+    @category_selectbox_options = BlogCategorization.category_selectbox_attributes_for_blogs_index
   end
 
   def select_csv
@@ -29,22 +33,51 @@ class BlogsController < ApplicationController
       BlogCategorization.insert_all(prepare_blog_categorizations(blogs))
 
       @blog_import_log.result = :success
-      flash[:success] = 'CSVを登録しました。'
+      flash[:success] = 'csvを登録しました。'
     rescue InvalidError => e
       @blog_import_log.result = :invalid_error
       @blog_import_log.message = e
-      flash[:danger] = "CSVの登録に失敗しました。#{line_break}#{e}"
+      flash[:danger] = "csvの登録に失敗しました。#{line_break}#{e}"
     rescue Exception => e
       @blog_import_log.result = :unexpected_error
       @blog_import_log.message = ([e] + e.backtrace).join(line_break)
-      flash[:danger] = "CSVの登録に失敗しました。#{line_break}#{e}"
+      flash[:danger] = "csvの登録に失敗しました。#{line_break}#{e}"
     ensure
       @blog_import_log.save
       redirect_to(select_csv_blogs_path)
     end
   end
 
+  def destroy_all
+    [BlogCategorization, Blog, Category, BlogImportLog].each do |m|
+      m.delete_all
+    end
+    flash[:danger] = 'データをすべて削除しました。'
+    redirect_to(select_csv_blogs_path)
+  end
+
   private
+
+  def sort_key
+    if params[:sort_key].blank?
+      return 'blogs.id asc'
+    end
+
+    # 画面から渡された文字列をそのままorderの引数に渡すのは危険。想定しない値は無視する。
+    unless params[:sort_key].in?(sort_condition.keys.map(&:to_s))
+      return 'blogs.id asc'
+    end
+
+    params[:sort_key]
+  end
+
+  def sort_condition
+    {
+      'blogs.id asc'    => 'ブログIDの昇順',
+      'good_count asc'  => 'いいねの昇順',
+      'good_count desc' => 'いいねの降順',
+    }
+  end
 
   def line_break
     "\r\n"
@@ -54,7 +87,7 @@ class BlogsController < ApplicationController
     10
   end
 
-  # CSV内でのブログタイトルの重複チェック。
+  # csv内でのブログタイトルの重複チェック。
   # DBに保存されたタイトルとの重複チェックはBlogクラスのバリデーションに定義。
   def validate_duplicate_title!
     return if duplicate_titles.blank?
