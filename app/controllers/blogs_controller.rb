@@ -3,6 +3,9 @@ require 'csv'
 class BlogsController < ApplicationController
   helper_method :sort_condition
 
+  LINE_BREAK = "\r\n".freeze
+  NUMBER_OF_ERROR_DISPLAY = 10
+
   def index
     @blogs = Blog.category_select(params[:category_ids]).eager_load(:categories).page(params[:page]).order(sort_key)
     @category_selectbox_options = BlogCategorization.category_selectbox_attributes_for_blogs_index
@@ -36,11 +39,11 @@ class BlogsController < ApplicationController
     rescue InvalidError => e
       blog_import_log.result = :invalid_error
       blog_import_log.message = e
-      flash[:danger] = "csvの登録に失敗しました。#{line_break}#{e}"
+      flash[:danger] = "csvの登録に失敗しました。#{LINE_BREAK}#{e}"
     rescue Exception => e
       blog_import_log.result = :unexpected_error
-      blog_import_log.message = ([e] + e.backtrace).join(line_break)
-      flash[:danger] = "csvの登録に失敗しました。#{line_break}#{e}"
+      blog_import_log.message = ([e] + e.backtrace).join(LINE_BREAK)
+      flash[:danger] = "csvの登録に失敗しました。#{LINE_BREAK}#{e}"
     ensure
       blog_import_log.save
       redirect_to(select_csv_blogs_path)
@@ -74,20 +77,12 @@ class BlogsController < ApplicationController
     }
   end
 
-  def line_break
-    "\r\n"
-  end
-
-  def number_of_error_display
-    10
-  end
-
   # csv内でのブログタイトルの重複チェック。
   # DBに保存されたタイトルとの重複チェックはBlogクラスのバリデーションに定義。
   def validate_duplicate_title!(blog_import_log)
     return if duplicate_titles(blog_import_log).blank?
 
-    raise(InvalidError, (['以下のタイトルが重複しています。'] + duplicate_titles(blog_import_log)).join(line_break))
+    raise(InvalidError, (['以下のタイトルが重複しています。'] + duplicate_titles(blog_import_log)).join(LINE_BREAK))
   end
 
   def duplicate_titles(blog_import_log)
@@ -122,14 +117,14 @@ class BlogsController < ApplicationController
       next if blog.valid?
 
       error_messages << "#{line_number}行目: #{blog.errors.full_messages}"
-      break if number_of_error_display <= error_messages.size
+      break if NUMBER_OF_ERROR_DISPLAY <= error_messages.size
 
       line_number += 1
     end
 
     return if error_messages.blank?
 
-    raise(InvalidError, error_messages.join(line_break))
+    raise(InvalidError, error_messages.join(LINE_BREAK))
   end
 
   def prepare_blog_categorizations(blogs)
