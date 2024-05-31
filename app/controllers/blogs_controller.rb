@@ -19,31 +19,31 @@ class BlogsController < ApplicationController
       render :select_csv and return
     end
 
-    @blog_import_log = BlogImportLog.create_blog_import_log!(params[:csv])
+    blog_import_log = BlogImportLog.create_blog_import_log!(params[:csv])
 
     ActiveRecord::Base.transaction do
-      validate_duplicate_title!
+      validate_duplicate_title!(blog_import_log)
 
-      Category.upsert_categories(@blog_import_log)
+      Category.upsert_categories(blog_import_log)
 
-      blogs = prepare_blogs
+      blogs = prepare_blogs(blog_import_log)
       validate_blogs!(blogs)
       Blog.import(blogs, validate: false)
 
       BlogCategorization.insert_all(prepare_blog_categorizations(blogs))
 
-      @blog_import_log.result = :success
+      blog_import_log.result = :success
       flash[:success] = 'csvを登録しました。'
     rescue InvalidError => e
-      @blog_import_log.result = :invalid_error
-      @blog_import_log.message = e
+      blog_import_log.result = :invalid_error
+      blog_import_log.message = e
       flash[:danger] = "csvの登録に失敗しました。#{line_break}#{e}"
     rescue Exception => e
-      @blog_import_log.result = :unexpected_error
-      @blog_import_log.message = ([e] + e.backtrace).join(line_break)
+      blog_import_log.result = :unexpected_error
+      blog_import_log.message = ([e] + e.backtrace).join(line_break)
       flash[:danger] = "csvの登録に失敗しました。#{line_break}#{e}"
     ensure
-      @blog_import_log.save
+      blog_import_log.save
       redirect_to(select_csv_blogs_path)
     end
   end
@@ -89,26 +89,26 @@ class BlogsController < ApplicationController
 
   # csv内でのブログタイトルの重複チェック。
   # DBに保存されたタイトルとの重複チェックはBlogクラスのバリデーションに定義。
-  def validate_duplicate_title!
-    return if duplicate_titles.blank?
-    raise(InvalidError, (['以下のタイトルが重複しています。'] + duplicate_titles).join(line_break))
+  def validate_duplicate_title!(blog_import_log)
+    return if duplicate_titles(blog_import_log).blank?
+    raise(InvalidError, (['以下のタイトルが重複しています。'] + duplicate_titles(blog_import_log)).join(line_break))
   end
 
-  def duplicate_titles
+  def duplicate_titles(blog_import_log)
     titles = []
-    CSV.parse(@blog_import_log.file_body, headers: true) do |row|
+    CSV.parse(blog_import_log.file_body.encode(Encoding::UTF_8, invalid: :replace, undef: :replace, universal_newline: true), headers: true) do |row|
       titles << row[0].to_s.strip
     end
     titles.select{|title| titles.count(title) > 1 }.uniq
   end
 
-  def prepare_blogs
+  def prepare_blogs(blog_import_log)
     all_categories = Category.pluck(:name, :id).to_h
     blogs = []
     id = (Blog.maximum(:id) || 0) + 1
 
-    CSV.parse(@blog_import_log.file_body, headers: true) do |csv_row|
-      blogs << Blog.initialize_blog_from_csv_row(id, csv_row, all_categories, @blog_import_log)
+    CSV.parse(blog_import_log.file_body, headers: true) do |csv_row|
+      blogs << Blog.initialize_blog_from_csv_row(id, csv_row, all_categories, blog_import_log)
       id += 1
     end
 
