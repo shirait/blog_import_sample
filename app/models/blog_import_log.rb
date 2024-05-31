@@ -9,9 +9,10 @@ class BlogImportLog < ApplicationRecord
   def self.create_blog_import_log!(csv)
     BlogImportLog.create!(
       file_name: csv.original_filename,
-      file_body: csv.read,
+      # force_encodingしないと、文字コードが'ascii-8bit'となることに注意。
+      # 変換できない文字が含まれていた場合の挙動は要検討。（エラーにする、空文字等に変更する、など）
+      file_body: csv.read.force_encoding('UTF-8'),
       result:    :before_process,
     )
-    BlogImportLog.last
   end
 end
