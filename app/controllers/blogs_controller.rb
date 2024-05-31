@@ -40,7 +40,7 @@ class BlogsController < ApplicationController
       blog_import_log.result = :invalid_error
       blog_import_log.message = e
       flash[:danger] = "csvの登録に失敗しました。#{LINE_BREAK}#{e}"
-    rescue Exception => e
+    rescue => e
       blog_import_log.result = :unexpected_error
       blog_import_log.message = ([e] + e.backtrace).join(LINE_BREAK)
       flash[:danger] = "csvの登録に失敗しました。#{LINE_BREAK}#{e}"
