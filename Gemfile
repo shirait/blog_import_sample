@@ -73,3 +73,6 @@ end
 
 gem 'activerecord-import'
 gem 'kaminari'
+
+# 「csv.rb was loaded from the standard library, but will no longer be part of the default gems since Ruby 3.4.0. Add csv to your Gemfile or gemspec.」の対応。
+gem 'csv'
