@@ -9,7 +9,7 @@ class Category < ApplicationRecord
     CSV.parse(blog_import_log.file_body, headers: true) do |row|
       categories_ary |= row[2].split(',').map(&:strip).select(&:present?)
     end
-    categories_hash = categories_ary.map{|name| {name: name}}
+    categories_hash = categories_ary.map { |name| { name: } }
     Category.upsert_all(categories_hash, on_duplicate: :update)
   end
 end

@@ -8,8 +8,7 @@ class BlogsController < ApplicationController
     @category_selectbox_options = BlogCategorization.category_selectbox_attributes_for_blogs_index
   end
 
-  def select_csv
-  end
+  def select_csv; end
 
   class InvalidError < RuntimeError; end
 
@@ -59,23 +58,19 @@ class BlogsController < ApplicationController
   private
 
   def sort_key
-    if params[:sort_key].blank?
-      return 'blogs.id asc'
-    end
+    return 'blogs.id asc' if params[:sort_key].blank?
 
     # 画面から渡された文字列をそのままorderの引数に渡すのは危険。想定しない値は無視する。
-    unless params[:sort_key].in?(sort_condition.keys.map(&:to_s))
-      return 'blogs.id asc'
-    end
+    return 'blogs.id asc' unless params[:sort_key].in?(sort_condition.keys.map(&:to_s))
 
     params[:sort_key]
   end
 
   def sort_condition
     {
-      'blogs.id asc'    => 'ブログIDの昇順',
-      'good_count asc'  => 'いいねの昇順',
-      'good_count desc' => 'いいねの降順',
+      'blogs.id asc' => 'ブログIDの昇順',
+      'good_count asc' => 'いいねの昇順',
+      'good_count desc' => 'いいねの降順'
     }
   end
 
@@ -91,15 +86,19 @@ class BlogsController < ApplicationController
   # DBに保存されたタイトルとの重複チェックはBlogクラスのバリデーションに定義。
   def validate_duplicate_title!(blog_import_log)
     return if duplicate_titles(blog_import_log).blank?
+
     raise(InvalidError, (['以下のタイトルが重複しています。'] + duplicate_titles(blog_import_log)).join(line_break))
   end
 
   def duplicate_titles(blog_import_log)
     titles = []
-    CSV.parse(blog_import_log.file_body.encode(Encoding::UTF_8, invalid: :replace, undef: :replace, universal_newline: true), headers: true) do |row|
+    CSV.parse(
+      blog_import_log.file_body.encode(Encoding::UTF_8, invalid: :replace, undef: :replace,
+                                                        universal_newline: true), headers: true
+    ) do |row|
       titles << row[0].to_s.strip
     end
-    titles.select{|title| titles.count(title) > 1 }.uniq
+    titles.select { |title| titles.count(title) > 1 }.uniq
   end
 
   def prepare_blogs(blog_import_log)
@@ -121,12 +120,15 @@ class BlogsController < ApplicationController
 
     blogs.each do |blog|
       next if blog.valid?
+
       error_messages << "#{line_number}行目: #{blog.errors.full_messages}"
       break if number_of_error_display <= error_messages.size
+
       line_number += 1
     end
 
     return if error_messages.blank?
+
     raise(InvalidError, error_messages.join(line_break))
   end
 
@@ -134,7 +136,7 @@ class BlogsController < ApplicationController
     blog_categorizations = []
     blogs.each do |blog|
       blog_categorizations +=
-        blog.category_ids_for_csv_import.map{|category_id| {blog_id: blog.id, category_id: category_id}}
+        blog.category_ids_for_csv_import.map { |category_id| { blog_id: blog.id, category_id: } }
     end
     blog_categorizations
   end
